@@ -68,9 +68,9 @@ public class Aether {
     private List<Artifact> artifacts = new LinkedList<Artifact>();
     private List<RemoteRepository> repos = new LinkedList<RemoteRepository>();
     private final Installer installer;
-    
+
     private final AetherSettings settings = new AetherSettings();
-    
+
     private final boolean verbose;
 
     public Aether(boolean verbose){
@@ -78,25 +78,25 @@ public class Aether {
         ServiceLocator locator = newServiceLocator();
         this.repoSystem = locator.getService( RepositorySystem.class );
         this.installer = locator.getService( Installer.class );
-        
+
         repos.add( new RemoteRepository( "central",
                                           "default",
-                                          "http://repo.maven.apache.org/maven2" ) );
+                                          "https://repo.maven.apache.org/maven2" ) );
     }
-    
+
     private RepositorySystemSession getSession()
     {
         if (this.session == null)
         {
             MavenRepositorySystemSession s = new MavenRepositorySystemSession();
-            
+
             Map<Object, Object> configProps = new LinkedHashMap<Object, Object>();
             configProps.put( ConfigurationProperties.USER_AGENT, settings.getUserAgent() );
             configProps.putAll( System.getProperties() );
             //configProps.putAll( (Map<?, ?>) getProperties() );
             configProps.putAll( (Map<?, ?>) settings.getUserProperties() );
             s.setConfigProps( configProps );
-            
+
             s.setLocalRepositoryManager( repoSystem.newLocalRepositoryManager( settings.getLocalRepository() ) );
             s.setRepositoryListener( new SimpleRepositoryListener( verbose, s.getLocalRepositoryManager() ) );
             s.setOffline(settings.isOffline());
@@ -109,22 +109,22 @@ public class Aether {
         }
         return this.session;
     }
-        
+
     private ServiceLocator newServiceLocator() {
         MavenServiceLocator locator = new MavenServiceLocator();// when using maven 3.0.4
         //locator.addService( RepositoryConnectorFactory.class, FileRepositoryConnectorFactory.class );
         locator.addService( RepositoryConnectorFactory.class, WagonRepositoryConnectorFactory.class );
-        
+
         locator.setServices( WagonProvider.class, new ManualWagonProvider() );
 
         return locator;
     }
-    
+
     public void setLocalRepository( File localRepository )
     {
         this.settings.setLocalRepository( new LocalRepository( localRepository ) );
-    }    
-    
+    }
+
     public void addMirror( String url )
     {
         Mirror mirror = new Mirror();
@@ -151,19 +151,19 @@ public class Aether {
         this.settings.setUserSettings( file );
     }
 
-        
+
     public void addProxy( String url )
     {
         URL u;
         try
         {
             u = new URL( url );
-        } 
+        }
         catch (MalformedURLException e)
         {
             throw new RuntimeException( "can not parse given url: " + url, e );
         }
-        
+
         final Authentication authentication;
         final String userInfo = u.getUserInfo();
         if ( userInfo != null &&  userInfo.contains( ":" ) )
@@ -181,7 +181,7 @@ public class Aether {
     public void addArtifact(String coordinate){
         artifacts.add(new DefaultArtifact(coordinate));
     }
-    
+
     public void addRepository(String id, String url){
         repos.add(new RemoteRepository(id, "default", url));
     }
@@ -190,7 +190,7 @@ public class Aether {
         if (artifacts.size() == 0){
             throw new IllegalArgumentException("no artifacts given");
         }
-       
+
         CollectRequest collectRequest = new CollectRequest();
         for( Artifact a: artifacts ){
             collectRequest.addDependency( new Dependency( a, "compile" ) );
@@ -207,14 +207,14 @@ public class Aether {
             {
                 r.setProxy( proxy );
             }
-            
-            collectRequest.addRepository( r );            
+
+            collectRequest.addRepository( r );
         }
-                
+
         node = repoSystem.collectDependencies( getSession(), collectRequest ).getRoot();
 
         DependencyRequest dependencyRequest = new DependencyRequest( node, null );
-        
+
         repoSystem.resolveDependencies( getSession(), dependencyRequest  );
     }
 
@@ -225,11 +225,11 @@ public class Aether {
     public List<Artifact> getArtifacts(){
         return Collections.unmodifiableList( artifacts );
     }
-    
+
     public String getClasspath() {
         PreorderNodeListGenerator nlg = new PreorderNodeListGenerator();
         node.accept( nlg );
-        
+
         StringBuilder buffer = new StringBuilder( 1024 );
 
         for ( Iterator<DependencyNode> it = nlg.getNodes().iterator(); it.hasNext(); )
@@ -252,7 +252,7 @@ public class Aether {
 
         return buffer.toString();
     }
-    
+
     public List<String> getResolvedCoordinates() {
         PreorderNodeListGenerator nlg = new PreorderNodeListGenerator();
         node.accept( nlg );
@@ -290,7 +290,7 @@ public class Aether {
         LocalRepositoryManager lrm = getSession().getLocalRepositoryManager();
 
         Artifact artifact = new DefaultArtifact(coordinate);
-        
+
         File dstFile = new File( lrm.getRepository().getBasedir(), lrm.getPathForLocalArtifact( artifact ) );
         if (!dstFile.exists() ){
             artifact = artifact.setFile(new File(file));
